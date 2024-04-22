@@ -13,15 +13,17 @@ type from_db_url struct {
 	url string
 }
 
-func AddtoDB(url string, code string) {
+func ConnecttoDB() *sql.DB {
 	connStr := "user=postgres password=Rkhg2s9121096 dbname=shortener sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	return db
+}
 
-	res, err := db.Exec("INSERT INTO shortener (url, code) VALUES ($1, $2)", url, code)
+func AddtoDB(url string, code string) {
+	res, err := ConnecttoDB().Exec("INSERT INTO shortener (url, code) VALUES ($1, $2)", url, code)
 
 	if err != nil {
 		panic(err)
@@ -32,19 +34,14 @@ func AddtoDB(url string, code string) {
 }
 
 func GetFromDB(code string) {
-	connStr := "user=postgres password=Rkhg2s9121096 dbname=shortener sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
 
-	row := db.QueryRow("SELECT url FROM shortener where code = $1", code)
+	row := ConnecttoDB().QueryRow("SELECT url FROM shortener where code = $1", code)
 
 	answer := from_db_url{}
-	err = row.Scan(&answer.url)
+	err := row.Scan(&answer.url)
+
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	fmt.Println(answer.url)
