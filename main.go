@@ -22,6 +22,15 @@ func ConnecttoDB() *sql.DB {
 	return db
 }
 
+// Добавил вот это
+func CloseDB(db *sql.DB) {
+	rows, err := ConnecttoDB().Query("SELECT *, pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = 'shortener'")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(rows)
+}
+
 func AddtoDB(url string, code string) {
 	res, err := ConnecttoDB().Exec("INSERT INTO shortener (url, code) VALUES ($1, $2)", url, code)
 
@@ -30,6 +39,7 @@ func AddtoDB(url string, code string) {
 	}
 	fmt.Print("Добавлено")
 	fmt.Println(res.RowsAffected())
+	CloseDB(ConnecttoDB())
 
 }
 
@@ -43,8 +53,8 @@ func GetFromDB(code string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	fmt.Println(answer.url)
+	CloseDB(ConnecttoDB())
 }
 
 func MakeShort(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +74,7 @@ func DecodeURL(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("hash is :%s\n", hash_code)
 	fmt.Println("Url is: ")
 	GetFromDB(hash_code)
+
 }
 
 func main() {
