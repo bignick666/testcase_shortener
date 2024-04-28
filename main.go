@@ -79,7 +79,7 @@ func main() {
 	}
 	database = db
 	defer db.Close()
-	db.SetMaxOpenConns(20)
+	db.SetMaxOpenConns(100)
 
 	http.HandleFunc("/s/", DecodeURL)
 	http.HandleFunc("/a/", MakeShort)
