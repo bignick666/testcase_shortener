@@ -16,17 +16,18 @@ type from_db_url struct {
 var database *sql.DB
 
 func AddtoDB(url string, code string) {
-	res, err := database.Exec("INSERT INTO shortener (url, code) VALUES ($1, $2)", url, code)
-
-	if err != nil {
-		panic(err)
+	if GetFromDB(code) == "sql: no rows in result set" {
+		_, err := database.Exec("INSERT INTO shortener (url, code) VALUES ($1, $2)", url, code)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		fmt.Println("Error")
 	}
-	fmt.Print("Добавлено")
-	fmt.Println(res.RowsAffected())
 
 }
 
-func GetFromDB(code string) {
+func GetFromDB(code string) string {
 
 	row := database.QueryRow("SELECT url FROM shortener where code = $1", code)
 
@@ -34,20 +35,9 @@ func GetFromDB(code string) {
 	err := row.Scan(&answer.url)
 
 	if err != nil {
-		fmt.Println(err)
+		return err.Error()
 	}
-	fmt.Println(answer.url)
-	// kol-vo konnektov - 11
-	/*
-
-		var count int
-		errik := database.QueryRow("SELECT COUNT(*) FROM pg_stat_activity").Scan(&count)
-
-		if errik != nil {
-			fmt.Println(errik)
-		}
-		fmt.Printf("There are %d connections in the database\n", count)
-	*/
+	return answer.url
 
 }
 
@@ -57,17 +47,17 @@ func MakeShort(w http.ResponseWriter, r *http.Request) {
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(url)))[:10]
 
 	AddtoDB(url, string(hash))
-	fmt.Println("Dobavleno: ")
-	fmt.Printf("ssilka: %s\n", url)
-	fmt.Printf("hashed to: %s\n", hash)
+	w.Write([]byte("Kodirovano v: "))
+	w.Write([]byte(hash + "\n"))
+	w.Write([]byte("Декодировать можно по адресу: http://127.0.0.1:8000/s/" + hash))
 }
 
 func DecodeURL(w http.ResponseWriter, r *http.Request) {
 	hash_code := r.RequestURI[3:len(r.RequestURI)]
 
 	fmt.Printf("hash is: %s\n", hash_code)
-	fmt.Println("Url is: ")
-	GetFromDB(hash_code)
+	w.Write([]byte("Dekodirovano v: "))
+	w.Write([]byte(GetFromDB(hash_code)))
 
 }
 
